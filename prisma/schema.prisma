@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id           String        @id @default(cuid())
+  name         String        @db.VarChar(191)
+  businessType String?       @db.VarChar(191)
+  phone        String?       @db.VarChar(32)
+  email        String?       @db.VarChar(191)
+  address      String?       @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  users        User[]
+  leads        Lead[]
+  customers    Customer[]
+  appointments Appointment[]
+  followUps    FollowUp[]
+  tasks        Task[]
+  notes        Note[]
+
+  @@index([phone])
+  @@index([email])
+}
+
+model User {
+  id             String     @id @default(cuid())
+  companyId      String
+  name           String     @db.VarChar(191)
+  email          String     @db.VarChar(191)
+  role           String     @db.VarChar(100)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  company        Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignedLeads  Lead[]     @relation("LeadAssignee")
+  assignedFollowUps FollowUp[] @relation("FollowUpAssignee")
+  assignedTasks  Task[]     @relation("TaskAssignee")
+  notes          Note[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  companyId   String
+  name        String     @db.VarChar(191)
+  phone       String?    @db.VarChar(32)
+  email       String?    @db.VarChar(191)
+  source      String?    @db.VarChar(100)
+  status      String     @default("New") @db.VarChar(50)
+  assignedTo  String?
+  notes       String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignee    User?      @relation("LeadAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  followUps   FollowUp[]
+  notesList   Note[]
+
+  @@index([companyId])
+  @@index([phone])
+  @@index([email])
+  @@index([status])
+  @@index([companyId, status])
+  @@index([assignedTo])
+}
+
+model Customer {
+  id           String        @id @default(cuid())
+  companyId    String
+  name         String        @db.VarChar(191)
+  phone        String?       @db.VarChar(32)
+  email        String?       @db.VarChar(191)
+  source       String?       @db.VarChar(100)
+  notes        String?       @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  followUps    FollowUp[]
+  notesList    Note[]
+
+  @@index([companyId])
+  @@index([phone])
+  @@index([email])
+}
+
+model Appointment {
+  id              String   @id @default(cuid())
+  companyId       String
+  customerId      String
+  title           String   @db.VarChar(191)
+  appointmentDate DateTime
+  status          String   @default("Scheduled") @db.VarChar(50)
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@index([companyId, appointmentDate])
+}
+
+model FollowUp {
+  id          String    @id @default(cuid())
+  companyId   String
+  leadId      String?
+  customerId  String?
+  assignedTo  String?
+  dueDate     DateTime
+  status      String    @default("Pending") @db.VarChar(50)
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead        Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assignee    User?     @relation("FollowUpAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([leadId])
+  @@index([customerId])
+  @@index([assignedTo])
+  @@index([dueDate])
+  @@index([status])
+  @@index([companyId, dueDate])
+  @@index([companyId, status])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  companyId   String
+  assignedTo  String?
+  title       String    @db.VarChar(191)
+  description String?   @db.Text
+  dueDate     DateTime?
+  status      String    @default("Open") @db.VarChar(50)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignee    User?     @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([assignedTo])
+  @@index([dueDate])
+  @@index([status])
+  @@index([companyId, dueDate])
+  @@index([companyId, status])
+}
+
+model Note {
+  id         String    @id @default(cuid())
+  companyId  String
+  leadId     String?
+  customerId String?
+  userId     String?
+  content    String    @db.Text
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead       Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([leadId])
+  @@index([customerId])
+  @@index([userId])
+}
