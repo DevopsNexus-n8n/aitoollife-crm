@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import "@fontsource-variable/figtree";
-import "@fontsource-variable/bricolage-grotesque";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
