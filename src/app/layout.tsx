@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
-import { Topbar } from "@/components/topbar";
+import { Topbar, TopbarFallback } from "@/components/topbar";
 
 export const metadata: Metadata = {
   title: {
@@ -24,7 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="lg:grid lg:min-h-screen lg:grid-cols-[15.5rem_minmax(0,1fr)]">
           <Sidebar />
           <div className="flex min-w-0 flex-col">
-            <Topbar />
+            <Suspense fallback={<TopbarFallback />}>
+              <Topbar />
+            </Suspense>
             <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-6 sm:px-8 sm:pt-8">
               {children}
             </main>
